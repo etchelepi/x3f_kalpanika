@@ -589,6 +589,7 @@ static int preprocess_data(x3f_t *x3f, int fix_bad, char *wb, x3f_image_levels_t
   double scale[3], black_level[3], black_dev[3], intermediate_bias;
   int quattro = x3f_image_area_qtop(x3f, &qtop);
   int colors_in = quattro ? 2 : 3;
+  double digital_ISO_Gain[3];
 
   if (!x3f_image_area(x3f, &image) || image.channels < 3) return 0;
   if (quattro && (qtop.channels < 1 ||
@@ -627,9 +628,19 @@ static int preprocess_data(x3f_t *x3f, int fix_bad, char *wb, x3f_image_levels_t
   x3f_printf(DEBUG, "max_intermediate = {%u,%u,%u}\n",
 	     ilevels->white[0], ilevels->white[1], ilevels->white[2]);
 
-  for (color = 0; color < 3; color++)
-    scale[color] = (ilevels->white[color] - ilevels->black[color]) /
-      (max_raw[color] - black_level[color]);
+
+    if (x3f_get_camf_float_vector(x3f,"DigitalISOGain",digital_ISO_Gain)) {
+      x3f_printf(DEBUG, "digital_ISO_Gain = {%f,%f,%f}\n",
+	     digital_ISO_Gain[0], digital_ISO_Gain[1], digital_ISO_Gain[2]);
+    } else {
+      for (int i = 0; i < 3; i ++) {
+          digital_ISO_Gain[i] = 1.0;
+      }
+    }
+
+  for (color = 0; color < 3; color++) {
+    scale[color] = ((ilevels->white[color] - ilevels->black[color]) / (max_raw[color] - black_level[color])) * digital_ISO_Gain[color]; 
+  }
 
   /* Preprocess image data (HUF/TRU->x3rgb16) */
   for (row = 0; row < image.rows; row++)
@@ -692,16 +703,20 @@ static int get_conv(x3f_t *x3f, x3f_color_encoding_t encoding, char *wb,
   double raw_to_xyz[9];	/* White point for XYZ is assumed to be D65 */
   double xyz_to_rgb[9];
   double raw_to_rgb[9];
-  double sensor_iso, capture_iso, iso_scaling;
+  double sensor_iso, capture_iso,iso_scaling;
 
   if (x3f_get_camf_float(x3f, "SensorISO", &sensor_iso) &&
       x3f_get_camf_float(x3f, "CaptureISO", &capture_iso)) {
+
+
     x3f_printf(DEBUG, "SensorISO = %g\n", sensor_iso);
     x3f_printf(DEBUG, "CaptureISO = %g\n", capture_iso);
-    iso_scaling = capture_iso/sensor_iso;
+    /*x3f_printf(DEBUG, "DigitalISO ma= %g\n", capture_iso);*/
+    iso_scaling = (capture_iso/sensor_iso) ;
+    
   }
   else {
-    iso_scaling = 1.0;
+    iso_scaling= capture_iso/sensor_iso;
     x3f_printf(WARN, "Could not calculate ISO scaling, assuming %g\n",
 	       iso_scaling);
   }
@@ -738,6 +753,10 @@ static int get_conv(x3f_t *x3f, x3f_color_encoding_t encoding, char *wb,
 
   x3f_3x3_3x3_mul(xyz_to_rgb, raw_to_xyz, raw_to_rgb);
   x3f_scalar_3x3_mul(iso_scaling, raw_to_rgb, conv_matrix);
+  /* Convert the 3x1 matrix to a 3x3 matrix*/
+  /*x3f_3x3_diag(iso_scaling,iso_scaling_idenity);
+  x3f_3x3_3x3_mul(iso_scaling_idenity, raw_to_rgb, conv_matrix);*/
+
 
   x3f_printf(DEBUG, "raw_to_rgb\n");
   x3f_3x3_print(DEBUG, raw_to_rgb);
