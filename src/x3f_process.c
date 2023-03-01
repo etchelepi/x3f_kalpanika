@@ -716,7 +716,7 @@ static int get_conv(x3f_t *x3f, x3f_color_encoding_t encoding, char *wb,
     
   }
   else {
-    iso_scaling= capture_iso/sensor_iso;
+    iso_scaling= 1.0;
     x3f_printf(WARN, "Could not calculate ISO scaling, assuming %g\n",
 	       iso_scaling);
   }
