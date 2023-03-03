@@ -590,7 +590,7 @@ static int preprocess_data(x3f_t *x3f, int fix_bad, char *wb, x3f_image_levels_t
   int quattro = x3f_image_area_qtop(x3f, &qtop);
   int colors_in = quattro ? 2 : 3;
   double digital_ISO_Gain[3];
-
+  int i;
   if (!x3f_image_area(x3f, &image) || image.channels < 3) return 0;
   if (quattro && (qtop.channels < 1 ||
 		  qtop.rows < 2*image.rows || qtop.columns < 2*image.columns))
@@ -633,7 +633,7 @@ static int preprocess_data(x3f_t *x3f, int fix_bad, char *wb, x3f_image_levels_t
       x3f_printf(DEBUG, "digital_ISO_Gain = {%f,%f,%f}\n",
 	     digital_ISO_Gain[0], digital_ISO_Gain[1], digital_ISO_Gain[2]);
     } else {
-      for (int i = 0; i < 3; i ++) {
+      for (i = 0; i < 3; i ++) {
           digital_ISO_Gain[i] = 1.0;
       }
     }

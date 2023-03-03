@@ -30,8 +30,10 @@ ifeq (windows, $(TARGET_SYS))
   CFBASE =
   LDBASE = -static
   AUXOBJS = mingw_dowildcard.o
+  OCV_LIB  = lib
 else
 ifeq (linux, $(TARGET_SYS))
+  OCV_LIB = lib/x86_64-linux-gnu
   EXE =
   CFBASE =
   LDBASE = -lz -ldl -lpthread
@@ -43,6 +45,7 @@ ifeq (osx, $(TARGET_SYS))
   LDBASE = $(SDKFLAGS) -Wl,-dead_strip_dylibs -liconv -framework OpenCL
   AUXOBJS =
 else
+  OSOCV = 
   $(warning WARNING: Unknown target: $(TARGET))
   EXE =
   CFBASE =
@@ -56,17 +59,17 @@ OCV = ../deps/lib/$(TARGET)/opencv
 
 ZLIB =
 ifneq ($(TARGET_SYS), linux)
-ZLIB = $(OCV)/share/OpenCV/3rdparty/lib/libzlib.a
+ZLIB = $(OCV)/share/OpenCV/3rdparty/$(OCV_LIB)/libzlib.a
 endif
-OCV_AUX = $(OCV)/share/OpenCV/3rdparty/lib/libtbb.a $(ZLIB)
+OCV_AUX = $(OCV)/share/OpenCV/3rdparty/$(OCV_LIB)/libtbb.a $(ZLIB)
 
 OCV_CFLAGS = -I$(OCV)/include
-OCV_LIBS = $(addprefix $(OCV)/lib/libopencv_,photo.a imgproc.a core.a) $(OCV_AUX)
+OCV_LIBS = $(addprefix $(OCV)/$(OCV_LIB)/libopencv_,photo.a imgproc.a core.a) $(OCV_AUX)
 
 TIFF_INC1 = ../deps/src/opencv/3rdparty/libtiff
 TIFF_INC2 = ../deps/src/$(TARGET)/opencv_build/3rdparty/libtiff
 TIFF_CFLAGS = -I$(TIFF_INC1) -I$(TIFF_INC2)
-TIFF_LIBS = $(OCV)/share/OpenCV/3rdparty/lib/liblibtiff.a $(ZLIB)
+TIFF_LIBS = $(OCV)/share/OpenCV/3rdparty/$(OCV_LIB)/liblibtiff.a $(ZLIB)
 
 CFLAGS = $(CFBASE) $(TIFF_CFLAGS) -g -O3 -Wall $(C)
 CXXFLAGS = $(CFLAGS) $(OCV_CFLAGS) -fvisibility-inlines-hidden
